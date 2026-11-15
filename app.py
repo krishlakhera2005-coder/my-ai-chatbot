@@ -9,11 +9,128 @@ from google.genai import types
 
 load_dotenv()
 
-st.set_page_config(page_title="Mera AI Chatbot", page_icon="🤖")
-st.title("🤖 Mera AI Chatbot")
+# ---------------------------------------------------------------
+# Branding (yahan se naam / tagline badal sakte ho)
+# ---------------------------------------------------------------
+BOT_NAME = "Krish AI"
+BOT_TAGLINE = "Padhai, coding ya ideas: jo bhi poochna ho, Hindi, Hinglish ya English mein poochho."
+
+SUGGESTIONS = [
+    ("📖  Photosynthesis simple mein samjhao",
+     "Photosynthesis ko simple Hinglish mein samjhao, ek real-life Indian example ke saath."),
+    ("🐍  Python mein list kya hoti hai?",
+     "Python mein list kya hoti hai? Chhote examples ke saath samjhao."),
+    ("🎬  Educational YouTube channel ke 5 video ideas",
+     "Ek educational YouTube channel ke liye 5 video ideas do."),
+    ("📝  BCA student ka resume kaise banayein?",
+     "BCA student ke liye ek strong resume kaise banayein? Practical tips do."),
+]
+
+st.set_page_config(
+    page_title=BOT_NAME,
+    page_icon="🤖",
+    layout="centered",
+    initial_sidebar_state="auto",
+)
+
+# ---------------------------------------------------------------
+# Design (CSS)
+# Palette: Ink #101a3a | Chalk #f6f7fb | Mist #e9ecf5 | Marigold #f0a020
+# Font: Mukta (Hindi/Devanagari + Latin dono ke liye bana hai)
+# ---------------------------------------------------------------
+st.markdown(
+    """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700&display=swap');
+
+.stApp, .stApp .stMarkdown, .stApp button, .stApp textarea,
+.stApp h1, .stApp h2, .stApp h3, .stApp p {
+    font-family: 'Mukta', 'Noto Sans Devanagari', 'Segoe UI', sans-serif;
+}
+
+/* Streamlit ka default chrome hatao */
+#MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"] { display: none !important; }
+header[data-testid="stHeader"] { background: transparent; }
+
+.block-container { max-width: 780px; padding-top: 2.2rem; padding-bottom: 7rem; }
+
+/* ---------- Top bar (chat chalne ke baad) ---------- */
+.topbar { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+          padding-bottom: 12px; margin-bottom: 8px; border-bottom: 1px solid #dde1ee; }
+.topbar b { font-size: 1.25rem; font-weight: 700; color: #101a3a; }
+.topbar span { font-size: .9rem; color: #5b6482; }
+
+/* ---------- Welcome screen ---------- */
+.greet { margin: 3.2rem 0 1.6rem; }
+.greet h1 { font-size: 2.5rem; line-height: 1.15; font-weight: 700; color: #101a3a;
+            margin: 0 0 .6rem; padding: 0; }
+.greet p  { font-size: 1.05rem; color: #5b6482; margin: 0; max-width: 34em; }
+
+/* Suggestion rows (sirf main area ke buttons) */
+[data-testid="stMain"] .stButton > button, section.main .stButton > button {
+    width: 100%; justify-content: flex-start; text-align: left;
+    background: transparent; color: #1a2038;
+    border: none; border-bottom: 1px solid #dde1ee; border-radius: 0;
+    padding: .95rem .35rem; font-size: 1.02rem; font-weight: 500;
+    transition: background .15s ease, border-color .15s ease;
+}
+[data-testid="stMain"] .stButton > button:hover, section.main .stButton > button:hover {
+    background: #ffffff; color: #1a2038; border-bottom-color: #f0a020;
+}
+[data-testid="stMain"] .stButton > button:focus-visible, section.main .stButton > button:focus-visible {
+    outline: 3px solid rgba(240,160,32,.55); outline-offset: 2px;
+}
+
+/* ---------- Chat messages ---------- */
+[data-testid="stChatMessage"] { background: transparent; border: none; padding: .65rem 0; }
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+    background: #e9ecf5; border-radius: 16px; padding: .8rem 1rem;
+}
+[data-testid="stCaptionContainer"] { color: #6b7494; }
+
+/* Chat input */
+[data-testid="stChatInput"], [data-testid="stChatInput"] > div { border-radius: 16px; }
+
+/* ---------- Sidebar (dark ink) ---------- */
+[data-testid="stSidebar"] { background: #101a3a; }
+[data-testid="stSidebar"] * { color: #eef1fb; }
+.side-brand { font-size: 1.35rem; font-weight: 700; margin: .2rem 0 1rem; }
+.side-label { font-size: .9rem; font-weight: 600; color: #9aa4c7 !important; margin: 1.2rem 0 .4rem; }
+.side-note  { font-size: .85rem; color: #9aa4c7 !important; }
+
+[data-testid="stSidebar"] .stButton > button {
+    width: 100%; justify-content: flex-start; text-align: left;
+    background: transparent; border: 1px solid transparent; border-radius: 10px;
+    font-weight: 500; padding: .45rem .7rem;
+}
+[data-testid="stSidebar"] .stButton > button:hover {
+    background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.14);
+}
+[data-testid="stSidebar"] .stButton > button p {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0;
+}
+/* "Nayi chat" = ek hi marigold button */
+[data-testid="stSidebar"] button[kind="primary"],
+[data-testid="stSidebar"] [data-testid="stBaseButton-primary"] {
+    background: #f0a020; border: none; justify-content: center; font-weight: 700;
+}
+[data-testid="stSidebar"] button[kind="primary"] *,
+[data-testid="stSidebar"] [data-testid="stBaseButton-primary"] * { color: #101a3a !important; }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 640px) {
+    .block-container { padding: 1.2rem 1rem 7rem; }
+    .greet { margin-top: 1.5rem; }
+    .greet h1 { font-size: 1.8rem; }
+    .topbar span { display: none; }
+}
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
 if not os.getenv("GEMINI_API_KEY"):
-    st.error("API key nahi mili. `.env` file check karo: GEMINI_API_KEY=...")
+    st.error("API key nahi mili. `.env` file (ya Streamlit Secrets) check karo: GEMINI_API_KEY=...")
     st.stop()
 
 
@@ -33,6 +150,10 @@ def get_db():
         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
         "chat_id TEXT, role TEXT, content TEXT, info TEXT)"
     )
+    # Purani DB mein user_id column add karo (har visitor ki chat alag rakhne ke liye)
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(chats)")]
+    if "user_id" not in cols:
+        conn.execute("ALTER TABLE chats ADD COLUMN user_id TEXT")
     conn.commit()
     return conn
 
@@ -41,50 +162,77 @@ client = get_client()
 db = get_db()
 
 MODELS = ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
-SYSTEM = "Tum ek helpful assistant ho. User ki language (Hindi/Hinglish/English) mein jawab do."
+SYSTEM = f"""Tumhara naam "{BOT_NAME}" hai. Tumhe Krish Lakhera ne banaya hai.
+Agar koi poochhe "tumhe kisne banaya?" to jawab do: "Mujhe Krish ne banaya hai."
+Agar koi seedha poochhe ki andar kaunsa AI model chal raha hai, to sach batao ki tum Google ke Gemini model par based ho.
+Tum ek helpful assistant ho. User ki language (Hindi/Hinglish/English) mein jawab do."""
 
 
-def load_messages(cid):
+def new_id(n=10):
+    return uuid.uuid4().hex[:n]
+
+
+def load_messages(cid, uid):
     rows = db.execute(
-        "SELECT role, content, info FROM chats WHERE chat_id=? ORDER BY id",
-        (cid,),
+        "SELECT role, content, info FROM chats WHERE chat_id=? AND user_id=? ORDER BY id",
+        (cid, uid),
     ).fetchall()
     return [{"role": r, "content": c, "info": i} for r, c, i in rows]
 
 
-# ---- Chat ID (address bar mein rehti hai) ----
+def use_suggestion(text):
+    st.session_state.pending_prompt = text
+
+
+# ---- Visitor ID + Chat ID (dono address bar mein rehte hain) ----
+if "uid" not in st.query_params:
+    st.query_params["uid"] = new_id(16)
+user_id = st.query_params["uid"]
+
 if "cid" not in st.query_params:
-    st.query_params["cid"] = uuid.uuid4().hex[:10]
+    st.query_params["cid"] = new_id()
 chat_id = st.query_params["cid"]
 
 if "messages" not in st.session_state:
-    st.session_state.messages = load_messages(chat_id)
+    st.session_state.messages = load_messages(chat_id, user_id)
 
 # ---- Sidebar: Nayi chat + purani chats ki list ----
 with st.sidebar:
-    if st.button("➕ Nayi chat", use_container_width=True):
-        st.query_params["cid"] = uuid.uuid4().hex[:10]
+    st.markdown(f'<div class="side-brand">🤖 {BOT_NAME}</div>', unsafe_allow_html=True)
+
+    if st.button("➕ Nayi chat", type="primary", use_container_width=True):
+        st.query_params["cid"] = new_id()
         st.session_state.messages = []
         st.rerun()
 
-    st.markdown("### 💬 Purani chats")
+    st.markdown('<div class="side-label">Purani chats</div>', unsafe_allow_html=True)
     chat_list = db.execute(
-        "SELECT chat_id FROM chats GROUP BY chat_id ORDER BY MAX(id) DESC LIMIT 30"
+        "SELECT c.chat_id, "
+        "(SELECT content FROM chats WHERE chat_id=c.chat_id AND user_id=c.user_id "
+        " AND role='user' ORDER BY id LIMIT 1) "
+        "FROM chats c WHERE c.user_id=? "
+        "GROUP BY c.chat_id ORDER BY MAX(c.id) DESC LIMIT 30",
+        (user_id,),
     ).fetchall()
 
     if not chat_list:
-        st.caption("Abhi koi chat nahi hai.")
+        st.markdown('<div class="side-note">Abhi koi chat nahi hai.</div>', unsafe_allow_html=True)
 
-    for (cid,) in chat_list:
-        first = db.execute(
-            "SELECT content FROM chats WHERE chat_id=? AND role='user' ORDER BY id LIMIT 1",
-            (cid,),
-        ).fetchone()
-        title = (first[0] if first else "Chat").replace("\n", " ")[:28]
-        label = ("🟢 " if cid == chat_id else "💬 ") + title
+    for cid, first in chat_list:
+        title = (first or "Chat").replace("\n", " ")[:28]
+        label = ("● " if cid == chat_id else "○ ") + title
         if st.button(label, key=f"chat_{cid}", use_container_width=True):
             st.query_params["cid"] = cid
-            st.session_state.messages = load_messages(cid)
+            st.session_state.messages = load_messages(cid, user_id)
+            st.rerun()
+
+    if st.session_state.messages:
+        st.markdown('<div class="side-label">Is chat ke liye</div>', unsafe_allow_html=True)
+        if st.button("🗑️ Ye chat delete karo", key="delete_chat", use_container_width=True):
+            db.execute("DELETE FROM chats WHERE chat_id=? AND user_id=?", (chat_id, user_id))
+            db.commit()
+            st.query_params["cid"] = new_id()
+            st.session_state.messages = []
             st.rerun()
 
 notes = ""
@@ -95,13 +243,6 @@ def system_text():
     if notes:
         return SYSTEM + "\n\nSirf in notes ke basis par jawab do:\n" + notes
     return SYSTEM
-
-
-for m in st.session_state.messages:
-    with st.chat_message(m["role"]):
-        st.markdown(m["content"])
-        if m.get("info"):
-            st.caption(m["info"])
 
 
 def make_config(fast):
@@ -133,9 +274,35 @@ def ask_gemini(contents):
     raise RuntimeError("\n\n".join(errors))
 
 
-if prompt := st.chat_input("Kuch poochho..."):
+# ---- Input (suggestion button ya typed message) ----
+typed = st.chat_input("Kuch poochho...")
+prompt = typed or st.session_state.pop("pending_prompt", None)
+
+# ---- Header ----
+if not st.session_state.messages and not prompt:
+    st.markdown(
+        f'<div class="greet"><h1>Namaste! Aaj kya seekhna hai?</h1><p>{BOT_TAGLINE}</p></div>',
+        unsafe_allow_html=True,
+    )
+    for i, (label, text) in enumerate(SUGGESTIONS):
+        st.button(label, key=f"sug_{i}", on_click=use_suggestion, args=(text,), use_container_width=True)
+else:
+    st.markdown(
+        f'<div class="topbar"><b>{BOT_NAME}</b><span>{BOT_TAGLINE}</span></div>',
+        unsafe_allow_html=True,
+    )
+
+# ---- Purani messages dikhao ----
+for m in st.session_state.messages:
+    with st.chat_message(m["role"], avatar="🧑" if m["role"] == "user" else "🤖"):
+        st.markdown(m["content"])
+        if m.get("info"):
+            st.caption(m["info"])
+
+# ---- Naya message ----
+if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
+    with st.chat_message("user", avatar="🧑"):
         st.markdown(prompt)
 
     contents = [
@@ -147,7 +314,7 @@ if prompt := st.chat_input("Kuch poochho..."):
     ]
 
     saved = False
-    with st.chat_message("assistant"):
+    with st.chat_message("assistant", avatar="🤖"):
         with st.spinner("Soch raha hu..."):
             try:
                 reply, info = ask_gemini(contents)
@@ -157,12 +324,12 @@ if prompt := st.chat_input("Kuch poochho..."):
                     {"role": "assistant", "content": reply, "info": info}
                 )
                 db.execute(
-                    "INSERT INTO chats (chat_id, role, content, info) VALUES (?,?,?,?)",
-                    (chat_id, "user", prompt, None),
+                    "INSERT INTO chats (chat_id, role, content, info, user_id) VALUES (?,?,?,?,?)",
+                    (chat_id, "user", prompt, None, user_id),
                 )
                 db.execute(
-                    "INSERT INTO chats (chat_id, role, content, info) VALUES (?,?,?,?)",
-                    (chat_id, "assistant", reply, info),
+                    "INSERT INTO chats (chat_id, role, content, info, user_id) VALUES (?,?,?,?,?)",
+                    (chat_id, "assistant", reply, info, user_id),
                 )
                 db.commit()
                 saved = True
